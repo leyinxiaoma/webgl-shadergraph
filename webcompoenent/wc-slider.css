@@ -1,0 +1,47 @@
+wc-slider {
+    position: relative;
+    display: block;
+    height: 24px;
+    margin: 3px;
+    cursor: pointer;
+}
+
+
+wc-slider .wc-slider {
+    position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;
+}
+wc-slider .slider-checkboard {
+    position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px; overflow: hidden;
+}
+wc-slider .slider-checkboard-renderbg {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    left: 0px;
+    background-color: #2F3A4F;
+    border-color: #293538;
+    margin: 9px 4px;
+}
+
+
+
+wc-slider .slider-handle-container {
+    position: relative; height: 100%; margin: 0px 3px;
+}
+
+wc-slider .slider-handle {
+    position: absolute;
+    background-color: #5b7073;
+    width: 8px;
+    margin-left: -5px;
+    top: 3px;
+    transition: left 100ms ease;
+    height:16px;
+    border: 1px solid #000;
+    cursor: ew-resize;
+}
+wc-slider .slider-handle:hover {
+    outline: none;
+    background-color: #07f
+}
