@@ -43,8 +43,8 @@
             return source1.pipe(merge(source2))
         }
 
-        var touchmove$$ =  merge2(fromEvent(document, 'mousemove'),fromEvent(document, 'touchmove'));
-        var touchend$$ =  merge2(fromEvent(document, 'mouseup'),fromEvent(document, 'touchend'));
+        var touchmove$$ =  merge2(fromEvent(document, 'mousemove'),fromEvent(document, 'touchmove').pipe(map(e => e.touches[0])));
+        var touchend$$ =  merge2(fromEvent(document, 'mouseup'),fromEvent(document, 'touchend').pipe(map(e => e.touches[0])));
     </script>
     <script src="utils/guid.js"></script>
     <script src="utils/array.js"></script>
@@ -177,7 +177,8 @@
     document.body.appendChild(editor._dom);
 
     var currentInput = null;
-    document.body.onmousemove = function(e){
+
+    function tapmove(e){
 
         if (currentInput){
             var path = currentInput.path;
@@ -187,18 +188,26 @@
             path.setAttributeNS(null, 'd', val);
         }
     };
-
-    document.body.onmouseup = function(e){
+    document.body.onmousemove = tapmove;
+    document.body.ontouchstart = function(evt){
+        tapmove(evt.touches[0]);
+    };
+    
+    function tapup(){
         if(currentInput){
             currentInput && (currentInput.node.enable_drag = true);
             currentInput.path.setAttributeNS(null, 'd', '');
             svg.removeChild(currentInput.path);
             currentInput = null;
         }     
-    };
-
+    }
+    document.body.onmouseup = tapup;
+    document.body.onmtouchend = tapup;
 
     function  createUV(){
+        var evt = window.event || arguments.callee.caller.arguments[0];
+        evt.preventDefault();
+        evt.stopPropagation();
         var canvas = document.createElement('canvas');
         canvas.width = 180;
         canvas.height = 180;
@@ -236,7 +245,7 @@ var node = el('div',{
 ]);
 
 Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
-    outdot.onmousedown = function(evt){
+    outdot.onmousedown = function(){
         var path = document.createElementNS(svg.ns, 'path');
         path.setAttributeNS(null, 'stroke', '#8e8e8e');
         path.setAttributeNS(null, 'stroke-width', '2');
@@ -251,11 +260,14 @@ Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
         };
         gnode.enable_drag = false;
     }
+
+    outdot.ontouchstart = outdot.onmousedown;
 });
 
 
 var gnode = new GraphNode();
 gnode.dom.style.position = 'absolute';
+gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
 gnode.dom.appendChild(node);
 gnode.on('node_move', function () {
     Array.prototype.forEach.call(node.querySelectorAll('.out-dot'), function (outdot) {
@@ -290,6 +302,9 @@ var PolarUid = (function uid(_uid){
 
 
 function  createPolarCoordinatesUV(){
+    var evt = window.event || arguments.callee.caller.arguments[0];
+        evt.preventDefault();
+        evt.stopPropagation();
         var canvas = document.createElement('canvas');
         canvas.width = 180;
         canvas.height = 180;
@@ -358,7 +373,10 @@ var node = el('div',{
 
 
 Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
-    outdot.onmousedown = function(evt){
+
+    
+
+    function tapmove(evt){
         var path = document.createElementNS(svg.ns, 'path');
         path.setAttributeNS(null, 'stroke', '#8e8e8e');
         path.setAttributeNS(null, 'stroke-width', '2');
@@ -373,6 +391,10 @@ Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
         };
         gnode.enable_drag = false;
     }
+
+    outdot.onmousedown = tapmove;
+    outdot.ontouchstart = tapmove;
+    
 });
 
 Array.prototype.forEach.call(node.querySelectorAll("wc-slider"),function(slider){
@@ -418,6 +440,7 @@ gnode.outcode = {
     }
 };
 gnode.dom.style.position = 'absolute';
+gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
 gnode.dom.appendChild(node);
 gnode.on('node_move', function () {
     Array.prototype.forEach.call(node.querySelectorAll('.out-dot'), function (outdot) {
@@ -445,6 +468,9 @@ var TwistUid = (function uid(_uid){
 
 
 function  createTwistUV(){
+        var evt = window.event || arguments.callee.caller.arguments[0];
+        evt.preventDefault();
+        evt.stopPropagation();
         var canvas = document.createElement('canvas');
         canvas.width = 180;
         canvas.height = 180;
@@ -580,7 +606,8 @@ Array.prototype.forEach.call(node.querySelectorAll("wc-slider"),function(slider)
 });
 
 Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
-    outdot.onmousedown = function(evt){
+
+    function tapdown(evt){
         var path = document.createElementNS(svg.ns, 'path');
         path.setAttributeNS(null, 'stroke', '#8e8e8e');
         path.setAttributeNS(null, 'stroke-width', '2');
@@ -595,6 +622,8 @@ Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
         };
         gnode.enable_drag = false;
     }
+    outdot.onmousedown = tapdown;
+    outdot.ontouchstart = tapdown;
 });
 
 
@@ -621,6 +650,7 @@ gnode.outcode = {
     }
 };
 gnode.dom.style.position = 'absolute';
+gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
 gnode.dom.appendChild(node);
 gnode.on('node_move', function () {
     Array.prototype.forEach.call(node.querySelectorAll('.out-dot'), function (outdot) {
@@ -812,6 +842,10 @@ document.body.appendChild(gnode.dom);
 
                 }  
             }
+        
+            indot.ontouchend = indot.onmouseup;
+        
+        
         });
         document.body.appendChild(gnode.dom);
     }

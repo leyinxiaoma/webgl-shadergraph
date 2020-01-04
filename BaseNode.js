@@ -97,7 +97,7 @@ class BaseNode extends Events{
         this.enable_contextmenu_drag = false;
         var _element = this;
 
-        this.tapstart$$ =  merge2(fromEvent(this._dom, 'mousedown'),fromEvent(this._dom, 'touchstart'));
+        this.tapstart$$ =  merge2(fromEvent(this._dom, 'mousedown'),fromEvent(this._dom, 'touchstart').pipe(map(e => e.touches[0])));
 
         this.holdTime$$ = touchend$$.pipe(
             map(_ => ({t:new Date().getTime(),x:  _.clientX,y:_.clientY})),
@@ -141,13 +141,13 @@ class BaseNode extends Events{
                     startLeft = parseInt(this.position.x, 10) || 0,
                     startTop = parseInt(this.position.y, 10) || 0;
 
-                md.stopPropagation();
-                md.preventDefault();
+                md.stopPropagation && md.stopPropagation();
+                md.preventDefault && md.preventDefault();
 
                 return touchmove$$.pipe(
                     map((mm) => {
-                        mm.stopPropagation();
-                        mm.preventDefault();
+                        mm.stopPropagation && mm.stopPropagation();
+                        mm.preventDefault && mm.preventDefault();
 
                         return {
                             tX: startLeft + mm.clientX - startX,
@@ -168,14 +168,14 @@ class BaseNode extends Events{
                     startTop = parseInt(this.position.y, 10) || 0,
                     starttime = Date.now();
 
-                md.stopPropagation();
-                md.preventDefault();
+                    md.stopPropagation && md.stopPropagation();
+                    md.preventDefault && md.preventDefault();
 
 
                 var source$ =  touchmove$$.pipe(
                     map((mm) => {
-                        mm.stopPropagation();
-                        mm.preventDefault();
+                        mm.stopPropagation && mm.stopPropagation();
+                        mm.preventDefault && mm.preventDefault();
 
                         var data = {
                             vxRate: (mm.clientX - startX)/ (Date.now() - starttime),
