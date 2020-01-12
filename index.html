@@ -757,11 +757,14 @@ document.body.appendChild(gnode.dom);
             }
         });
 
+        var uniform1param = "iChannel0";
         var previewcanvas = node.querySelector('.preview-canvas'); 
-        var fsshader = `
-        vec4 color = texture2D(iChannel0,outuv);
-        gl_FragColor = color;`;
-        var previewactions = previewnode(previewcanvas,{def:'',code:''},{def:'',code:fsshader});
+        var fsshader = {
+            def:`uniform sampler2D ${uniform1param};`,
+            code:` vec4 color = texture2D(iChannel0,outuv);
+                   gl_FragColor = color;`
+        }; 
+        var previewactions = previewnode(previewcanvas,{def:'',code:''},fsshader);
 
         function sourcein(){
           var _sourcein = sourcelist[gnode.resource_id + "_t1"];
@@ -772,7 +775,7 @@ document.body.appendChild(gnode.dom);
             var iChannel0Tex = new TextureData(gl);
             iChannel0Tex.rawchannel(_sourcein.file,0);
             iChannel0Tex.bind(0);
-            previewactions.uniformMap("iChannel0","int", 0);
+            previewactions.uniformMap(uniform1param,"int", 0);
           })
        }
 
@@ -783,6 +786,34 @@ document.body.appendChild(gnode.dom);
         });
 
         var gnode = new GraphNode();
+        gnode.outcode = {
+            out4:() => {
+
+                return previewactions.readPixels();  
+                                        
+            
+    },
+    'commonfunc':null,
+    params:[],
+    def:`uniform sampler2D iChannel0;`,
+    code: `vec4 color = texture2D(iChannel0,outuv);`,
+    setting:function(gl){
+        
+
+        if(gnode.connectnodes && gnode.connectnodes.length){
+           
+            for(var i = 0;i < gnode.connectnodes.length;i++){
+                var cnode  = gnode.connectnodes[i];
+                this.params.forEach(p => {
+                   var slider = gnode.dom.querySelector('wc-slider[name="' + p[0] +'"]');
+                   cnode.previewactions.uniformMap( slider.name,p[1],Number(slider.value));
+                   cnode.previewactions.draw();
+                });
+            }
+        } 
+
+    }
+};
         gnode.dom.style.position = 'absolute';
         gnode.dom.appendChild(node);
         gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
@@ -800,7 +831,7 @@ document.body.appendChild(gnode.dom);
             });
         });
         
-        var inputdom = Array.prototype.forEach.call(node.querySelectorAll('.in-dot'),function(indot){
+        Array.prototype.forEach.call(node.querySelectorAll('.in-dot'),function(indot){
 
             indot.onmouseup = function(){
                 if(currentInput && (indot.inType  === currentInput.dot.outType)){
@@ -849,6 +880,27 @@ document.body.appendChild(gnode.dom);
         
         
         });
+        
+        Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
+
+function tapdown(evt){
+    var path = document.createElementNS(svg.ns, 'path');
+    path.setAttributeNS(null, 'stroke', '#8e8e8e');
+    path.setAttributeNS(null, 'stroke-width', '2');
+    path.setAttributeNS(null, 'fill', 'none');
+    svg.appendChild(path);
+
+
+    currentInput = {
+        dot:outdot,
+        node:gnode,
+        path:path
+    };
+    gnode.enable_drag = false;
+}
+outdot.onmousedown = tapdown;
+outdot.ontouchstart = tapdown;
+});
         document.body.appendChild(gnode.dom);
     }
 </script>
@@ -902,12 +954,11 @@ function  createBlendAdd(){
 
 
         var previewcanvas = node.querySelector('.preview-canvas'); 
-        var fsshader = `
-        vec4 color1 = vec4(1.,0.,1.,1.);
-        vec4 color2 = vec4(0.,1.,1.,1.);
-        vec4 color = OperationBlend(color1,color2,1.0);
-        gl_FragColor = color;`;
-        var previewactions = previewnode(previewcanvas,{def:'',code:''},{def:'',commonfunc:{
+
+        var fsshader ={def:`
+            uniform sampler2D iChannel0;
+            uniform sampler2D iChannel1;
+        `,commonfunc:{
             name:'BlendAdd',
             code:`vec4 OperationBlend(vec4 origin, vec4 overlay, float blend)
 {
@@ -918,16 +969,21 @@ o.a = clamp(o.a,0.0,1.0);
 o = mix(origin, o, blend);
 return o;
 }`
-        },code:fsshader});
-
+        },code: `
+        vec4 color1 = vec4(1.,0.,1.,1.);
+        vec4 color2 = vec4(0.,1.,1.,1.);
+        vec4 outcolor = OperationBlend(color1,color2,1.0);
+        gl_FragColor = outcolor;`};
+        var previewactions = previewnode(previewcanvas,{def:'',code:''},fsshader);
+        
         function sourcein(){
-          var _sourcein = sourcelist[gnode.resource_id + "_t1"];
-          var inputpreview = node.querySelector('.input-preview'); 
-          inputpreview.style.background = 'url(' + _sourcein.src + ')';
-
+         // var _sourcein = sourcelist[gnode.resource_id + "_t1"];
+         //  var inputpreview = node.querySelector('.input-preview'); 
+         // inputpreview.style.background = 'url(' + _sourcein.src + ')';
+          var outcode = currentInput.dot.node.outcode;
           previewactions && previewactions.draw(function(gl){      
             var iChannel0Tex = new TextureData(gl);
-            iChannel0Tex.rawchannel(_sourcein.file,0);
+            iChannel0Tex.channel(outcode.out4,0);
             iChannel0Tex.bind(0);
             previewactions.uniformMap("iChannel0","int", 0);
           })
@@ -951,6 +1007,66 @@ return o;
                 }
             });
         });
+
+        Array.prototype.forEach.call(node.querySelectorAll('.in-dot'),function(indot){
+
+indot.onmouseup = function(){
+    if(currentInput && (indot.inType  === currentInput.dot.outType)){
+
+        if(indot.out){
+            indot.out.path.parentNode.removeChild(indot.out.path);
+            indot.out.in = null;
+            indot.out.path = null;
+        }
+
+        indot.out = currentInput.dot;
+        indot.node = gnode;
+        indot.path = currentInput.path;
+
+        currentInput.dot.in = indot;
+        currentInput.dot.path = currentInput.path;
+        currentInput.dot.node = currentInput.node;
+
+
+        var cnodes = currentInput.node.connectnodes = (currentInput.node.connectnodes || []);
+        cnodes.splice(cnodes.indexOf(gnode),1,gnode);
+
+    
+
+        if(indot.node.previewactions){
+            debugger
+            var outcode = currentInput.dot.node.outcode;
+            indot.node.previewactions.update({def:'',code:''},{
+                def:fsshader.def,
+                commonfunc:fsshader.commonfunc,
+                code:`vec4 color1 = texture2D(iChannel0,outuv);;
+        vec4 color2 = vec4(0.,1.,1.,1.);
+        vec4 outcolor = OperationBlend(color1,color2,1.0);
+        gl_FragColor = color1;`
+            });
+            indot.node.previewactions.draw(function(gl){
+                outcode.setting(gl);
+                var iChannel0Tex = new TextureData(gl);
+                iChannel0Tex.channel(outcode.out4(),0);
+                iChannel0Tex.bind(0);
+                previewactions.uniformMap("iChannel0","int", 0);
+              
+            });
+        }
+
+        currentInput && (currentInput.node.enable_drag = true);
+        currentInput = null;
+
+
+
+    }  
+}
+
+indot.ontouchend = indot.onmouseup;
+
+
+});
+
         document.body.appendChild(gnode.dom);
 
 }
@@ -1072,13 +1188,11 @@ void main() {
 
 var tmplfs = (fsshader) => `
 precision mediump float;
-uniform sampler2D iChannel0;
-uniform sampler2D iChannel1;
-uniform sampler2D iChannel2;
-uniform sampler2D iChannel3;
+${fsshader.def}
+
 varying vec2 vUV;
 ${ (fsshader.commonfunc && fsshader.commonfunc.code) || ""}
-${fsshader.def}
+
 void main() {
 
    vec2 outuv = vUV;
@@ -1169,6 +1283,7 @@ function updateShader(_vs,_fs){
 
 
 var actions = {
+        getContext:function() { return gl },
         getLocation: function(_location) { return gl.getUniformLocation(program, _location); },  
         uniformMap(_location, type, value) {
             var map = {
@@ -1187,6 +1302,17 @@ var actions = {
         draw(beforeDraw){
             beforeDraw  && beforeDraw(gl);
             gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT,0);
+        },
+        readPixels(){
+            gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT,0);
+            var pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
+            gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            
+            return {
+                        width: gl.drawingBufferWidth,
+                        height: gl.drawingBufferHeight,
+                        buffer: pixels
+                    };      
         },
         update(vs,fs){
             var code = buildShaderCode(vs,fs);
@@ -1213,6 +1339,7 @@ function TextureData(gl,pixels){
             gl.bindTexture(gl.TEXTURE_2D, tex);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
             gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
             if(repeat === true || repeat === 'repeat'){
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
