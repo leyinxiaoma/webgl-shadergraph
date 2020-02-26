@@ -97,7 +97,7 @@ class BaseNode extends Events{
         this.enable_contextmenu_drag = false;
         var _element = this;
 
-        this.tapstart$$ =  merge2(fromEvent(this._dom, 'mousedown'),fromEvent(this._dom, 'touchstart').pipe(map(e => e.touches[0])));
+        this.tapstart$$ =  merge2(fromEvent(this._dom, 'mousedown'),fromEvent(this._dom, 'touchstart'));
 
         this.holdTime$$ = touchend$$.pipe(
             map(_ => ({t:new Date().getTime(),x:  _.clientX,y:_.clientY})),
@@ -141,13 +141,13 @@ class BaseNode extends Events{
                     startLeft = parseInt(this.position.x, 10) || 0,
                     startTop = parseInt(this.position.y, 10) || 0;
 
-                md.stopPropagation && md.stopPropagation();
-                md.preventDefault && md.preventDefault();
+                md.stopPropagation();
+                md.preventDefault();
 
                 return touchmove$$.pipe(
                     map((mm) => {
-                        mm.stopPropagation && mm.stopPropagation();
-                        mm.preventDefault && mm.preventDefault();
+                        mm.stopPropagation();
+                        mm.preventDefault();
 
                         return {
                             tX: startLeft + mm.clientX - startX,
@@ -168,14 +168,14 @@ class BaseNode extends Events{
                     startTop = parseInt(this.position.y, 10) || 0,
                     starttime = Date.now();
 
-                    md.stopPropagation && md.stopPropagation();
-                    md.preventDefault && md.preventDefault();
+                md.stopPropagation();
+                md.preventDefault();
 
 
                 var source$ =  touchmove$$.pipe(
                     map((mm) => {
-                        mm.stopPropagation && mm.stopPropagation();
-                        mm.preventDefault && mm.preventDefault();
+                        mm.stopPropagation();
+                        mm.preventDefault();
 
                         var data = {
                             vxRate: (mm.clientX - startX)/ (Date.now() - starttime),
@@ -208,79 +208,8 @@ class BaseNode extends Events{
                 this.render();
 
                 this.emit('node_move');
-
-            }),
-
-            // this.drop$$.subscribe( (x) => {
-
-            //     var vxRate = x.vxRate,vyRate = x.vyRate;
-
-            //     if(vxRate > 1){
-            //         vxRate = Math.max(2,vxRate);
-            //     }else if(vxRate <  -1){
-            //         vxRate = Math.min(-2,vxRate);
-            //     }else{
-            //         vxRate = 0;
-            //     }
-
-            //     if(vyRate > 1){
-            //         vyRate = Math.max(2,vyRate);
-            //     }else if(vyRate <  -1){
-            //         vyRate = Math.min(-2,vyRate);
-            //     }else{
-            //         vyRate = 0;
-            //     }
-
-            //     var vRate = Math.max(Math.abs(vxRate),Math.abs(vyRate));
-
-            //     // if(vxRate < 0 ) {
-            //     //     vxRate = -vRate;
-            //     // }else if(vxRate > 0 ){
-            //     //     vxRate = vRate;
-            //     // }
-            //     //
-            //     // if(vyRate < 0 ) {
-            //     //     vyRate = -vRate;
-            //     // }else if(vyRate > 0){
-            //     //     vyRate = vRate;
-            //     // }
-
-            //     if(Math.abs(vRate) > 1){
-
-            //         this._dirty = true;
-
-
-            //         this.tween({
-            //             sv:{_posx:this.position.x,_posy:this.position.y},
-            //             ev:{_posx:x.tX +  vxRate * 30,_posy:x.tY +  vyRate * 30},
-            //             easingFunction:1,
-            //             delay:0,
-            //             easingType:0,
-            //             duration:100,
-            //             update:function(obj){
-
-            //                 this.position.x = obj._posx;
-            //                 this.position.y = obj._posy;
-            //                 this._dirty = true;
-            //                 this.render();
-            //             },
-            //             complete:function(){
-
-            //             }
-            //         });
-
-            //         _node.addEventListener('transitionend',function onShow(){
-            //             _node.removeEventListener('transitionend', onShow);
-            //             _node.style.transition = 'none';
-            //         });
-            //         //this._dom.style.transition = 'transform 0.15s ease';
-            //         this.render();
-            //     }
-
-            // })
+            })
         ];
-
-
         this._initBoundProperties();
     };
 
@@ -586,19 +515,14 @@ BaseNode.prototype._getTargetCoords = function(event){
 
 BaseNode.prototype.render = function(){
     if(this._dirty){
-
         var _parent = this._parent;
         var _globalScale = new Vec2(1,1);
         while(_parent){
-            console.log(_parent.scale);
             _globalScale = new Vec2().mul2(_parent.scale,_globalScale);
             _parent = _parent._parent;
         };
 
-
         var out = new Vec2(1/_globalScale.x,1/_globalScale.y).mul(this.position);
-
-        console.log(out);
 
         let _matrix = prependMatrix(toMatrix([1,0,0,1,0,0]),toMatrix([this.scale.x,0,0,this.scale.y,out.x,out.y]));
         _matrix = toMatrix(_matrix);
@@ -606,7 +530,6 @@ BaseNode.prototype.render = function(){
         + _matrix.d +',' +  _matrix.tx + ',' +  _matrix.ty +')';
 
         this.worldMatrix = _matrix;
-
     }
     this._dirty = false;
 };
@@ -615,9 +538,6 @@ BaseNode.prototype.render = function(){
 BaseNode.prototype.renderstyle = function() {
 
 };
-
-
-
 
 function matchesSelectorListener(selector, listener, contextNode) {
     return function(e) {
@@ -874,52 +794,4 @@ BaseNode.prototype.dispose = function(node) {
 BaseNode.prototype.detach = function() {
     this._parent = null;
     this._dom.parentNode && this._dom.parentNode.removeChild(this._dom);
-};
-
-BaseNode.prototype.tween = function({sv,ev,duration,repeat = 0,yoyo= false,repeatDelay = 0,delay = 0,easingFunction = 0,easingType,complete,update}) {
-
-    var easingTypes = [ 'In', 'Out', 'InOut' ];
-    var easingFuncs = [ 'Linear', 'Quadratic', 'Cubic', 'Quartic', 'Quintic', 'Sinusoidal', 'Exponential', 'Circular', 'Elastic', 'Back', 'Bounce'];
-
-    var easingFunc;
-    if (easingFunction === 0) {
-        easingFunc = TWEEN.Easing[easingFuncs[easingFunction]].None;
-    } else {
-        easingFunc = TWEEN.Easing[easingFuncs[easingFunction]][easingTypes[easingType]];
-    }
-
-    if (this._tween) {
-        this._tween.stop();
-    }
-
-
-    this._tween = new TWEEN.Tween(sv)
-        .to(ev,duration)
-        .easing(easingFunc)
-        .onStart(function (obj) {
-
-        }.bind(this))
-        .onStop(function (obj) {
-
-        }.bind(this))
-        .onUpdate(function (obj) {
-            for (var prop in obj) {
-                if(this.hasOwnProperty(prop)){
-                    this[prop] = obj[prop]
-                }
-            }
-            update && update.call(this,obj);
-
-        }.bind(this))
-        .onComplete(function (obj) {
-            complete && complete.call(this,obj);
-        }.bind(this))
-        .onRepeat(function (obj) {
-
-        }.bind(this))
-        .repeat(repeat)
-        .repeatDelay(repeatDelay)
-        .yoyo(yoyo)
-        .delay(delay)
-        .start();
 };

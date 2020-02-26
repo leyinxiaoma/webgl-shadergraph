@@ -37,8 +37,6 @@
 
         var withLatestFrom = rxjs.operators.withLatestFrom;
 
-
-
         function  merge2(source1,source2){
             return source1.pipe(merge(source2))
         }
@@ -58,14 +56,22 @@
     <script src="webcompoenent/core/popup.js"></script>
     <script src="webcompoenent/UIComponent.js"></script>
     <script src="webcompoenent/wc-slider.js"></script>
+    <script src="webcompoenent/wc-checkbox.js"></script>
     <link rel="stylesheet" href="webcompoenent/wc-slider.css">
-
+    <link rel="stylesheet" href="webcompoenent/wc-checkbox.css">
 
     <script src="Events.js"></script>
     <script src="BaseNode.js"></script>
     <script src="Observer.js"></script>
     <script src="GraphNode.js"></script>
-
+    <script src="/webgl-render.js"></script>
+    <script src="/nodes/ShaderNode.js"></script>
+    <script src="/nodes/SampleTexture2D.js"></script>
+    <script src="/nodes/TilingOffset.js"></script> 
+    <script src="/nodes/TwistUV.js"></script>
+    <script src="/nodes/BlendAdd.js"></script>
+    <script src="/nodes/ShaderPreviewNode.js"></script>
+    
     <style>
         .node {
             position: absolute;
@@ -136,13 +142,14 @@
 <body>
 
 
+
 <div id="menucontext-1" style="display: none;position: absolute;padding: 8px 0;background:#fff;" class="ui-menu-item container hover">
     <div class="content" style="top: -384px;">
         <div class="ui-menu-item" onclick="createSampleTexture2D();hideContextMenu();"><div class="title"><span class="text">Sample Texture 2D</span></div><div class="content"></div></div>
-        <div class="ui-menu-item" onclick="createUV();hideContextMenu();"><div class="title"><span class="text">UV</span></div><div class="content"></div></div>
+        <div class="ui-menu-item" onclick="createTilingOffsetUV();hideContextMenu();"><div class="title"><span class="text">TilingOffset</span></div><div class="content"></div></div>
         <div class="ui-menu-item"  onclick="createPolarCoordinatesUV();hideContextMenu();"><div class="title"><span class="text">PolarCoordinatesUV</span></div><div class="content"></div></div>
         <div class="ui-menu-item"  onclick="createTwistUV();hideContextMenu();"><div class="title"><span class="text">TwistUV</span></div><div class="content"></div></div>
-        <div class="ui-menu-item"  onclick="createBlendAdd();hideContextMenu();"><div class="title"><span class="text">TwistUV</span></div><div class="content"></div></div>
+        <div class="ui-menu-item"  onclick="createBlendAdd();hideContextMenu();"><div class="title"><span class="text">BlendAdd</span></div><div class="content"></div></div>
         
     </div>
 </div>
@@ -206,95 +213,18 @@
     document.body.onmouseup = tapup;
     document.body.onmtouchend = tapup;
 
-    function  createUV(){
-        var evt = window.event || arguments.callee.caller.arguments[0];
-        evt.preventDefault();
-        evt.stopPropagation();
-        var canvas = document.createElement('canvas');
-        canvas.width = 180;
-        canvas.height = 180;
-        canvas.style.display = 'block';
-        var fsshader = ` gl_FragColor = vec4(vUV,0,1);`;
-
-        var previewactions = previewnode(canvas,{def:'',code:''},{def:'',code:fsshader});
-        var el = wcUtils.utils.createElement;
-
-var node = el('div',{
-    className:"node",
-    style:"width:180px;border:1px solid #232323;"
-},[
-    el('div',{className:"title",style:"background:#393939;color:#fff;font-size:12px;padding:5px 5px;",innerHTML:'OriginUV'}),
-    el('div',{style:"background:#393939;display:flex;"},[
-        el('div',{className:'left-slot',style:"flex:1;background:#393939;border:1px solid #232323;border-left:none;min-height:50px;"},[
-            el('div',{
-                style:"display:flex;display: flex;justify-content: flex-end;padding-right: 5px;"
-            },[
-
-            ])
-        ]),
-        el('div',{className:'right-slot',style:"flex:1;background:#2b2b2b;border:1px solid #232323;border-left:none;border-right:none;min-height:50px;"},[
-            el('div',{
-                   style:"display:flex;display: flex;justify-content: flex-end;padding-right: 5px;"
-                },[
-                    el('div',{style:"display:flex;align-items: center;"},[
-                        el('span',{innerHTML: 'out(2)',style:"color:#fff;font-size:12px;padding-right:5px;"}),
-                        el('span',{className:"out-dot",outType:"vec2"})
-                    ])
-            ])
-        ])
-    ]),
-    canvas
-]);
-
-Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
-    outdot.onmousedown = function(){
-        var path = document.createElementNS(svg.ns, 'path');
-        path.setAttributeNS(null, 'stroke', '#8e8e8e');
-        path.setAttributeNS(null, 'stroke-width', '2');
-        path.setAttributeNS(null, 'fill', 'none');
-        svg.appendChild(path);
-
-
-        currentInput = {
-            dot:outdot,
-            node:gnode,
-            path:path
-        };
-        gnode.enable_drag = false;
-    }
-
-    outdot.ontouchstart = outdot.onmousedown;
-});
-
-
-var gnode = new GraphNode();
-gnode.dom.style.position = 'absolute';
-gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
-gnode.dom.appendChild(node);
-gnode.on('node_move', function () {
-    Array.prototype.forEach.call(node.querySelectorAll('.out-dot'), function (outdot) {
-        var path = outdot.path;
-        if (path) {
-            var indot = outdot.in;
-            var inputPt = getAttachPoint({ node: indot.node, dot: indot });
-            var outputPt = getAttachPoint({ node: gnode, dot: outdot });
-            var val = createPath(inputPt, outputPt);
-            path.setAttributeNS(null, 'd', val);
-        }
-    });
-});
-
-
-document.body.appendChild(gnode.dom);
-    }
-
-    
-
-
-
-
 
 </script>
+
+
+<script>
+    var globalpreviewnode = new ShaderPreviewNode(null);
+    globalpreviewnode.dom.style.position = 'fixed';
+    globalpreviewnode.dom.style.top = '0';
+    globalpreviewnode.dom.style.right = '180px';
+    document.body.appendChild(globalpreviewnode.dom); 
+</script>
+
 
 <script>
 
@@ -375,9 +305,6 @@ var node = el('div',{
 
 
 Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
-
-    
-
     function tapmove(evt){
         var path = document.createElementNS(svg.ns, 'path');
         path.setAttributeNS(null, 'stroke', '#8e8e8e');
@@ -464,613 +391,46 @@ document.body.appendChild(gnode.dom);
 </script>
 
 <script>
-var TwistUid = (function uid(_uid){
-    return function() { return _uid++ };
-})(1);
 
 
-function  createTwistUV(){
-        var evt = window.event || arguments.callee.caller.arguments[0];
-        evt.preventDefault();
-        evt.stopPropagation();
-        var canvas = document.createElement('canvas');
-        canvas.width = 180;
-        canvas.height = 180;
-        canvas.style.display = 'block';
-        var pid = TwistUid();
 
-        var uniform1param = `TwistUV_Bend_${pid}`;
-        var uniform2param = `TwistUV_PosX_${pid}`;
-        var uniform3param = `TwistUV_PosY_${pid}`;
-        var uniform4param = `TwistUV_Radius_${pid}`;
-
-        var fsshader = {
-            def:`uniform float ${uniform1param};
-            uniform float ${uniform2param};
-            uniform float ${uniform3param};
-            uniform float ${uniform4param};
-            `,
-            commonfunc:{
-                name:"TwistUV",
-
-                code:`vec2 TwistUV(vec2 uv, float value, float posx, float posy, float radius)
-{
-    vec2 center = vec2(posx, posy);
-    vec2 tc = uv - center;
-    float dist = length(tc);
-if (dist < radius)
-{
-float percent = (radius - dist) / radius;
-float theta = percent * percent * 16.0 * sin(value);
-float s = sin(theta);
-float c = cos(theta);
-tc = vec2(dot(tc, vec2(c, -s)), dot(tc, vec2(s, c)));
-}
-tc += center;
-return tc;
-}`
-
-            },
-            code:`
-    outuv = TwistUV(outuv,${uniform1param},${uniform2param},${uniform3param},${uniform4param});
-    gl_FragColor = vec4(outuv,0,1);`};
-
-        var previewactions = previewnode(canvas,{def:'',code:''},fsshader);
-        var el = wcUtils.utils.createElement;
-
-var node = el('div',{
-    className:"node",
-    style:"width:180px;border:1px solid #232323;"
-},[
-    el('div',{className:"title",style:"background:#393939;color:#fff;font-size:12px;padding:5px 5px;",innerHTML:'TwistUV'}),
-    el('div',{style:"background:#393939;display:flex;"},[
-        el('div',{className:'left-slot',style:"flex:1;background:#393939;border:1px solid #232323;border-left:none;min-height:50px;"},[
-                el('div',{style:"display:flex;align-items: center;padding-left:5px;position:relative"},[
-                        el('div',{style:"position:absolute;display:flex;align-items: center;right:100px;height:20px;width:100px;background:#393939;"},[
-                            el('wc-slider',{value:0,name:uniform1param,min:-1,max:1,className:"param-twist-slider", style:"width:70px;margin-left:2px;margin-right:2px;"}),
-                            el('span',{className:"input-dot"}),
-                            el('span',{className:"auto-in-dot"}),
-                            el('div',{style:"position:absolute;height:2px;width: 24px;background: #d85d15b3;right: -20px;mix-blend-mode: color;"}),
-                        ]),
-                        el('span',{className:"in-dot"}),
-                        el('span',{innerHTML: 'Twist',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                ]),
-                el('div',{style:"display:flex;align-items: center;padding-left:5px;position:relative"},[
-                        el('div',{style:"position:absolute;display:flex;align-items: center;right:100px;height:20px;width:100px;background:#393939;"},[
-                            el('wc-slider',{value:0.5,name:uniform2param,min:-1,max:2,className:"param-posx-slider", style:"width:70px;margin-left:2px;margin-right:2px;"}),
-                            el('span',{className:"input-dot"}),
-                            el('span',{className:"auto-in-dot"}),
-                            el('div',{style:"position:absolute;height:2px;width: 24px;background: #d85d15b3;right: -20px;mix-blend-mode: color;"}),
-                        ]),
-                        el('span',{className:"in-dot"}),
-                        el('span',{innerHTML: 'PosX',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                ]),
-                el('div',{style:"display:flex;align-items: center;padding-left:5px;position:relative"},[
-                        el('div',{style:"position:absolute;display:flex;align-items: center;right:100px;height:20px;width:100px;background:#393939;"},[
-                            el('wc-slider',{value:0.5,name:uniform3param,min:-1,max:2,className:"param-posy-slider", style:"width:70px;margin-left:2px;margin-right:2px;"}),
-                            el('span',{className:"input-dot"}),
-                            el('span',{className:"auto-in-dot"}),
-                            el('div',{style:"position:absolute;height:2px;width: 24px;background: #d85d15b3;right: -20px;mix-blend-mode: color;"}),
-                        ]),
-                        el('span',{className:"in-dot"}),
-                        el('span',{innerHTML: 'PosY',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                ]),
-                el('div',{style:"display:flex;align-items: center;padding-left:5px;position:relative"},[
-                        el('div',{style:"position:absolute;display:flex;align-items: center;right:100px;height:20px;width:100px;background:#393939;"},[
-                            el('wc-slider',{value:0.5,name:uniform4param,min:0,max:1,className:"param-radius-slider", style:"width:70px;margin-left:2px;margin-right:2px;"}),
-                            el('span',{className:"input-dot"}),
-                            el('span',{className:"auto-in-dot"}),
-                            el('div',{style:"position:absolute;height:2px;width: 24px;background: #d85d15b3;right: -20px;mix-blend-mode: color;"}),
-                        ]),
-                        el('span',{className:"in-dot"}),
-                        el('span',{innerHTML: 'Radius',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                ]),
-        ]),
-        el('div',{className:'right-slot',style:"flex:1;background:#2b2b2b;border:1px solid #232323;border-left:none;border-right:none;min-height:50px;"},[
-            el('div',{
-                   style:"display:flex;display: flex;justify-content: flex-end;padding-right: 5px;"
-                },[
-                    el('div',{style:"display:flex;align-items: center;"},[
-                        el('span',{innerHTML: 'out(2)',style:"color:#fff;font-size:12px;padding-right:5px;"}),
-                        el('span',{className:"out-dot",outType:"vec2"})
-                    ])
-            ])
-        ])
-    ]),
-    canvas
-]);
-
-//node data init
-
-previewactions.uniformMap( uniform1param,"float",0);
-previewactions.uniformMap( uniform2param,"float",0.5);
-previewactions.uniformMap( uniform3param,"float",0.5);
-previewactions.uniformMap( uniform4param,"float",0.5);
-previewactions.draw();
-
-Array.prototype.forEach.call(node.querySelectorAll("wc-slider"),function(slider){
-    slider.onmousedown = function(){
-        gnode.enable_drag = false;
-        window.addEventListener('mouseup',mouseup);
-        function mouseup(){
-            gnode.enable_drag = true;
-            window.removeEventListener('mouseup',mouseup);
-        }
-    }
-
-
-    slider.onchange = function(evt){
-        previewactions.uniformMap( evt.target.name,"float",Number(evt.target.value));
-        previewactions.draw();
-
-        gnode.outcode.setting();
-    }
-});
-
-Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
-
-    function tapdown(evt){
-        var path = document.createElementNS(svg.ns, 'path');
-        path.setAttributeNS(null, 'stroke', '#8e8e8e');
-        path.setAttributeNS(null, 'stroke-width', '2');
-        path.setAttributeNS(null, 'fill', 'none');
-        svg.appendChild(path);
-
-
-        currentInput = {
-            dot:outdot,
-            node:gnode,
-            path:path
-        };
-        gnode.enable_drag = false;
-    }
-    outdot.onmousedown = tapdown;
-    outdot.ontouchstart = tapdown;
-});
-
-
-var gnode = new GraphNode();
-gnode.outcode = {
-    'commonfunc':fsshader.commonfunc,
-    params:[ [uniform1param,"float"] ,[uniform2param,"float"],[uniform3param,"float"],[uniform4param,"float"]],
-    def:fsshader.def,
-    code: `outuv = TwistUV(outuv,${uniform1param},${uniform2param},${uniform3param},${uniform4param});`,
-    setting:function(){
-        
-
-        if(gnode.connectnodes && gnode.connectnodes.length){
-           
-            for(var i = 0;i < gnode.connectnodes.length;i++){
-                var cnode  = gnode.connectnodes[i];
-                this.params.forEach(p => {
-                   var slider = gnode.dom.querySelector('wc-slider[name="' + p[0] +'"]');
-                   cnode.previewactions.uniformMap( slider.name,p[1],Number(slider.value));
-                   cnode.previewactions.draw();
-               });
-            }
-        }   
-    }
-};
-gnode.dom.style.position = 'absolute';
-gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
-gnode.dom.appendChild(node);
-gnode.on('node_move', function () {
-    Array.prototype.forEach.call(node.querySelectorAll('.out-dot'), function (outdot) {
-        var path = outdot.path;
-        if (path) {
-            var indot = outdot.in;
-            var inputPt = getAttachPoint({ node: indot.node, dot: indot });
-            var outputPt = getAttachPoint({ node: gnode, dot: outdot });
-            var val = createPath(inputPt, outputPt);
-            path.setAttributeNS(null, 'd', val);
-        }
-    });
-});
-
-
-document.body.appendChild(gnode.dom);
-}
 </script>
 
 <script>
-    function createSampleTexture2D(){
-
+    function  createTilingOffsetUV(){
         var evt = window.event || arguments.callee.caller.arguments[0];
         evt.preventDefault();
         evt.stopPropagation();
-
-
-        var el = wcUtils.utils.createElement;
-
-        var node = el('div',{
-            className:"node",
-            style:"width:180px;border:1px solid #232323;"
-        },[
-            el('div',{className:"title",style:"background:#393939;color:#fff;font-size:12px;padding:5px 5px;",innerHTML:'Sample Texture 2D'}),
-            el('div',{style:"background:#393939;display:flex;"},[
-                el('div',{className:'left-slot',style:"flex:1;background:#393939;border:1px solid #232323;border-left:none;min-height:50px;"},[
-
-                    el('div',{style:"display:flex;align-items: center;padding-left:5px;position:relative"},[
-                        el('div',{style:"position:absolute;display:flex;align-items: center;right:100px;height:20px;width:100px;background:#393939;"},[
-                            el('div',{className:"input-preview", style:"width:70px;margin-left:2px;height:16px;margin-right:2px;border:1px solid #232323;"}),
-                            el('span',{className:"input-dot"}),
-                            el('span',{className:"auto-in-dot"}),
-                            el('div',{style:"position:absolute;height:2px;width: 24px;background: #d85d15b3;right: -20px;mix-blend-mode: color;"}),
-                        ]),
-                        el('span',{className:"in-dot"}),
-                        el('span',{innerHTML: 'Texture(T2)',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                    ]),
-
-                    el('div',{style:"display:flex;align-items: center;padding-left:5px;"},[
-                        el('span',{className:"in-dot",inType:"vec2"}),
-                        el('span',{innerHTML: 'UV(2)',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                    ])
-                ]),
-                el('div',{className:'right-slot',style:"flex:1;background:#2b2b2b;border:1px solid #232323;border-left:none;border-right:none;min-height:50px;"},[
-                    el('div',{
-                        style:"display:flex;display: flex;justify-content: flex-end;padding-right: 5px;"
-                    },[
-                        el('div',{style:"display:flex;align-items: center;"},[
-                            el('span',{innerHTML: 'out(4)',style:"color:#fff;font-size:12px;padding-right:5px;"}),
-                            el('span',{className:"out-dot",outType:"vec4"})
-                        ])
-                    ])
-                ])
-            ]),
-            el('canvas',{className:"preview-canvas",width:180,height:180})
-        ]);
-
-
-        var fileinput = fileinput || el('input',{
-            type:"file",
-            accept:"image/*"
-        });
-
-        var sourcelist = {};
-
-        fileinput.addEventListener('change',function(evt){
-            evt.preventDefault();
-            var files = evt.target.files || evt.dataTransfer.files;
-            if (files) {
-                Array.prototype.forEach.call(files,file => {
-
-                    var sourcename = evt.target.name
-                    var reader = new FileReader();
-                    reader.onload = () => {
-                        var img = new Image();
-                        img.onload = () => {
-                            sourcelist[sourcename] = {
-                                file:img,
-                                filename: file.name,
-                                src: img.src,
-                                width:img.width,
-                                height:img.height
-                            }
-                            fileinput.name = "";
-
-                            sourcein();
-                        };
-                        img.src = reader.result
-                    };
-                    reader.readAsDataURL(file)
-                });
-            }
-        });
-
-        var uniform1param = "iChannel0";
-        var previewcanvas = node.querySelector('.preview-canvas'); 
-        var fsshader = {
-            def:`uniform sampler2D ${uniform1param};`,
-            code:` vec4 color = texture2D(iChannel0,outuv);
-                   gl_FragColor = color;`
-        }; 
-        var previewactions = previewnode(previewcanvas,{def:'',code:''},fsshader);
-
-        function sourcein(){
-          var _sourcein = sourcelist[gnode.resource_id + "_t1"];
-          var inputpreview = node.querySelector('.input-preview'); 
-          inputpreview.style.background = 'url(' + _sourcein.src + ')';
-
-          previewactions && previewactions.draw(function(gl){      
-            var iChannel0Tex = new TextureData(gl);
-            iChannel0Tex.rawchannel(_sourcein.file,0);
-            iChannel0Tex.bind(0);
-            previewactions.uniformMap(uniform1param,"int", 0);
-          })
-       }
-
-        var inputdom = node.querySelector('.input-dot');
-        inputdom.addEventListener('click',function(){
-            fileinput.name = gnode.resource_id + "_t1";
-            fileinput.click();
-        });
-
-        var gnode = new GraphNode();
-        gnode.outcode = {
-            out4:() => {
-
-                return previewactions.readPixels();  
-                                        
-            
-    },
-    'commonfunc':null,
-    params:[],
-    def:`uniform sampler2D iChannel0;`,
-    code: `vec4 color = texture2D(iChannel0,outuv);`,
-    setting:function(gl){
-        
-
-        if(gnode.connectnodes && gnode.connectnodes.length){
-           
-            for(var i = 0;i < gnode.connectnodes.length;i++){
-                var cnode  = gnode.connectnodes[i];
-                this.params.forEach(p => {
-                   var slider = gnode.dom.querySelector('wc-slider[name="' + p[0] +'"]');
-                   cnode.previewactions.uniformMap( slider.name,p[1],Number(slider.value));
-                   cnode.previewactions.draw();
-                });
-            }
-        } 
-
-    }
-};
-        gnode.dom.style.position = 'absolute';
-        gnode.dom.appendChild(node);
-        gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
-        gnode.previewactions = previewactions;
-        gnode.on('node_move',function(){
-            Array.prototype.forEach.call(node.querySelectorAll('.in-dot'),function(indot){
-
-                var path = indot.path;
-                if(path){
-                    var inputPt = getAttachPoint({node:gnode, dot:indot});
-                    var outputPt = getAttachPoint({node:indot.out.node, dot:indot.out});
-                    var val = createPath(inputPt, outputPt);
-                    path.setAttributeNS(null, 'd', val);
-                }
-            });
-        });
-        
-        Array.prototype.forEach.call(node.querySelectorAll('.in-dot'),function(indot){
-
-            indot.onmouseup = function(){
-                if(currentInput && (indot.inType  === currentInput.dot.outType)){
-
-                    if(indot.out){
-                        indot.out.path.parentNode.removeChild(indot.out.path);
-                        indot.out.in = null;
-                        indot.out.path = null;
-                    }
-
-                    indot.out = currentInput.dot;
-                    indot.node = gnode;
-                    indot.path = currentInput.path;
-
-                    currentInput.dot.in = indot;
-                    currentInput.dot.path = currentInput.path;
-                    currentInput.dot.node = currentInput.node;
-
-
-                    var cnodes = currentInput.node.connectnodes = (currentInput.node.connectnodes || []);
-                    cnodes.splice(cnodes.indexOf(gnode),1,gnode);
-            
-                
-
-                    if(indot.node.previewactions){
-                        var outcode = currentInput.dot.node.outcode;
-                        indot.node.previewactions.update({def:'',code:''},{
-                            def:outcode.def,
-                            commonfunc:outcode.commonfunc,
-                            code:outcode.code + fsshader
-                        });
-                        indot.node.previewactions.draw(function(gl){
-                            outcode.setting();
-                        });
-                    }
-
-                    currentInput && (currentInput.node.enable_drag = true);
-                    currentInput = null;
-
-
-
-                }  
-            }
-        
-            indot.ontouchend = indot.onmouseup;
-        
-        
-        });
-        
-        Array.prototype.forEach.call(node.querySelectorAll(".out-dot"),function(outdot){
-
-function tapdown(evt){
-    var path = document.createElementNS(svg.ns, 'path');
-    path.setAttributeNS(null, 'stroke', '#8e8e8e');
-    path.setAttributeNS(null, 'stroke-width', '2');
-    path.setAttributeNS(null, 'fill', 'none');
-    svg.appendChild(path);
-
-
-    currentInput = {
-        dot:outdot,
-        node:gnode,
-        path:path
-    };
-    gnode.enable_drag = false;
-}
-outdot.onmousedown = tapdown;
-outdot.ontouchstart = tapdown;
-});
+        var gnode = new TilingOffset(evt)._gnode;
         document.body.appendChild(gnode.dom);
     }
-</script>
-
-<script>
-
-
-
-
-function  createBlendAdd(){
-
-    var evt = window.event || arguments.callee.caller.arguments[0];
-        evt.preventDefault();
-        evt.stopPropagation();
-
-
-        var el = wcUtils.utils.createElement;
-
-        var node = el('div',{
-            className:"node",
-            style:"width:180px;border:1px solid #232323;"
-        },[
-            el('div',{className:"title",style:"background:#393939;color:#fff;font-size:12px;padding:5px 5px;",innerHTML:'Blend Add'}),
-            el('div',{style:"background:#393939;display:flex;"},[
-                el('div',{className:'left-slot',style:"flex:1;background:#393939;border:1px solid #232323;border-left:none;min-height:50px;"},[
-
-                    el('div',{style:"display:flex;align-items: center;padding-left:5px;"},[
-                        el('span',{className:"in-dot",inType:"vec4"}),
-                        el('span',{innerHTML: 'rgba(4)',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                    ]),
-
-                    el('div',{style:"display:flex;align-items: center;padding-left:5px;"},[
-                        el('span',{className:"in-dot",inType:"vec4"}),
-                        el('span',{innerHTML: 'rgba(4)',style:"color:#fff;font-size:12px;padding-left:5px;"})
-                    ])
-                ]),
-                el('div',{className:'right-slot',style:"flex:1;background:#2b2b2b;border:1px solid #232323;border-left:none;border-right:none;min-height:50px;"},[
-                    el('div',{
-                        style:"display:flex;display: flex;justify-content: flex-end;padding-right: 5px;"
-                    },[
-                        el('div',{style:"display:flex;align-items: center;"},[
-                            el('span',{innerHTML: 'out(4)',style:"color:#fff;font-size:12px;padding-right:5px;"}),
-                            el('span',{className:"out-dot",outType:"vec4"})
-                        ])
-                    ])
-                ])
-            ]),
-            el('canvas',{className:"preview-canvas",width:180,height:180})
-        ]);
-
-
-
-        var previewcanvas = node.querySelector('.preview-canvas'); 
-
-        var fsshader ={def:`
-            uniform sampler2D iChannel0;
-            uniform sampler2D iChannel1;
-        `,commonfunc:{
-            name:'BlendAdd',
-            code:`vec4 OperationBlend(vec4 origin, vec4 overlay, float blend)
-{
-    vec4 o = origin; 
-o.a = overlay.a + origin.a * (1. - overlay.a);
-o.rgb = (overlay.rgb * overlay.a + origin.rgb * origin.a * (1. - overlay.a)) * (o.a+0.0000001);
-o.a = clamp(o.a,0.0,1.0);
-o = mix(origin, o, blend);
-return o;
-}`
-        },code: `
-        vec4 color1 = vec4(1.,0.,1.,1.);
-        vec4 color2 = vec4(0.,1.,1.,1.);
-        vec4 outcolor = OperationBlend(color1,color2,1.0);
-        gl_FragColor = outcolor;`};
-        var previewactions = previewnode(previewcanvas,{def:'',code:''},fsshader);
-        
-        function sourcein(){
-         // var _sourcein = sourcelist[gnode.resource_id + "_t1"];
-         //  var inputpreview = node.querySelector('.input-preview'); 
-         // inputpreview.style.background = 'url(' + _sourcein.src + ')';
-          var outcode = currentInput.dot.node.outcode;
-          previewactions && previewactions.draw(function(gl){      
-            var iChannel0Tex = new TextureData(gl);
-            iChannel0Tex.channel(outcode.out4,0);
-            iChannel0Tex.bind(0);
-            previewactions.uniformMap("iChannel0","int", 0);
-          })
-       }
-
-
-        var gnode = new GraphNode();
-        gnode.dom.style.position = 'absolute';
-        gnode.dom.appendChild(node);
-        gnode.position = new Vec2((evt.clientX +  10),evt.clientY);
-        gnode.previewactions = previewactions;
-        gnode.on('node_move',function(){
-            Array.prototype.forEach.call(node.querySelectorAll('.in-dot'),function(indot){
-
-                var path = indot.path;
-                if(path){
-                    var inputPt = getAttachPoint({node:gnode, dot:indot});
-                    var outputPt = getAttachPoint({node:indot.out.node, dot:indot.out});
-                    var val = createPath(inputPt, outputPt);
-                    path.setAttributeNS(null, 'd', val);
-                }
-            });
-        });
-
-        Array.prototype.forEach.call(node.querySelectorAll('.in-dot'),function(indot){
-
-indot.onmouseup = function(){
-    if(currentInput && (indot.inType  === currentInput.dot.outType)){
-
-        if(indot.out){
-            indot.out.path.parentNode.removeChild(indot.out.path);
-            indot.out.in = null;
-            indot.out.path = null;
-        }
-
-        indot.out = currentInput.dot;
-        indot.node = gnode;
-        indot.path = currentInput.path;
-
-        currentInput.dot.in = indot;
-        currentInput.dot.path = currentInput.path;
-        currentInput.dot.node = currentInput.node;
-
-
-        var cnodes = currentInput.node.connectnodes = (currentInput.node.connectnodes || []);
-        cnodes.splice(cnodes.indexOf(gnode),1,gnode);
-
     
-
-        if(indot.node.previewactions){
-            debugger
-            var outcode = currentInput.dot.node.outcode;
-            indot.node.previewactions.update({def:'',code:''},{
-                def:fsshader.def,
-                commonfunc:fsshader.commonfunc,
-                code:`vec4 color1 = texture2D(iChannel0,outuv);;
-        vec4 color2 = vec4(0.,1.,1.,1.);
-        vec4 outcolor = OperationBlend(color1,color2,1.0);
-        gl_FragColor = color1;`
-            });
-            indot.node.previewactions.draw(function(gl){
-                outcode.setting(gl);
-                var iChannel0Tex = new TextureData(gl);
-                iChannel0Tex.channel(outcode.out4(),0);
-                iChannel0Tex.bind(0);
-                previewactions.uniformMap("iChannel0","int", 0);
-              
-            });
-        }
-
-        currentInput && (currentInput.node.enable_drag = true);
-        currentInput = null;
-
-
-
-    }  
-}
-
-indot.ontouchend = indot.onmouseup;
-
-
-});
-
+    function  createTwistUV(){
+        var evt = window.event || arguments.callee.caller.arguments[0];
+        evt.preventDefault();
+        evt.stopPropagation();
+        var gnode = new TwistUV(evt)._gnode;
         document.body.appendChild(gnode.dom);
+    }
 
-}
+    function createSampleTexture2D(){
+        var evt = window.event || arguments.callee.caller.arguments[0];
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        var gnode = new SampleTexture2D(evt)._gnode;
+        document.body.appendChild(gnode.dom);
+    }
+
+    function createBlendAdd(){
+        var evt = window.event || arguments.callee.caller.arguments[0];
+        evt.preventDefault();
+        evt.stopPropagation();
+        var gnode = new BlendAdd(evt)._gnode;
+        document.body.appendChild(gnode.dom);
+    }
 </script>
+
 
 <script>
     function createPath(a, b){
@@ -1116,9 +476,6 @@ indot.ontouchend = indot.onmouseup;
         }else{
 
         }
-
-
-
         return pathStr;
     }
 
@@ -1158,439 +515,10 @@ indot.ontouchend = indot.onmouseup;
     document.body.appendChild(svg);
 </script>
 
+
+
+
 <script>
-function previewnode(canvas,vsshader,fsshader){
-
-    var glcanvas = canvas;
-    var gl = glcanvas.getContext('webgl',{antialias:true,alpha: true,premultipliedAlpha: false});
-
-    //USE gl.UNSIGNED_INT
-    var ext = gl.getExtension('OES_element_index_uint');
-
-    gl.viewport(0, 0, glcanvas.width, glcanvas.height);
-    gl.enable(gl.DEPTH_TEST);
-
-    gl.clearStencil(gl.STENCIL_BUFFER_BIT);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.blendEquation(gl.FUNC_ADD);
-    var tmplvs = (vsshader) => `
-attribute vec3 aPosition;
-attribute vec2 aUV;
-varying vec2 vUV;
-void main() {
-    gl_Position = vec4(aUV.xy * 2.0 - 1.0, 0.5, 1);
-    vUV = aUV;
-}
-`;
-
-var tmplfs = (fsshader) => `
-precision mediump float;
-${fsshader.def}
-
-varying vec2 vUV;
-${ (fsshader.commonfunc && fsshader.commonfunc.code) || ""}
-
-void main() {
-
-   vec2 outuv = vUV;
-   ${fsshader.code}
-}
-`;
-    
-
-    var buildShaderCode = (vsshader,fsshader) => ({
-        vs:tmplvs(vsshader),
-        fs:tmplfs(fsshader)
-    });
-
-    var quad = createPlane({
-        calculateTangents:true,
-        widthSegments:1,
-        heightSegments:1
-    });
-
-    var rawPosBuffer = gl.createBuffer();
-    var buffferTypedata = new Float32Array(quad.positions);
-    gl.bindBuffer(gl.ARRAY_BUFFER, rawPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER,buffferTypedata , gl.STATIC_DRAW);
-
-
-    var rawTangBuffer = gl.createBuffer();
-    buffferTypedata = new Float32Array(quad.tangents);
-    gl.bindBuffer(gl.ARRAY_BUFFER, rawTangBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER,buffferTypedata , gl.STATIC_DRAW);
-
-
-    var rawNormalBuffer = gl.createBuffer();
-    buffferTypedata = new Float32Array(quad.normals);
-    gl.bindBuffer(gl.ARRAY_BUFFER, rawNormalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, buffferTypedata , gl.STATIC_DRAW);
-
-
-
-    var rawUVBuffer = gl.createBuffer();
-    buffferTypedata = new Float32Array(quad.uvs);
-    gl.bindBuffer(gl.ARRAY_BUFFER, rawUVBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, buffferTypedata , gl.STATIC_DRAW);
-
-    var indexBuffer = gl.createBuffer();
-    indexBuffer.numItems = quad.indices.length;
-    indexBuffer.typeArray = new Uint16Array(quad.indices);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indexBuffer.typeArray,gl.STATIC_DRAW);    
-
-
-    var program ;
-function updateShader(_vs,_fs){
-    var shader = shaderPrograme(gl,_vs,_fs);
-    gl.useProgram(shader.program);
-
-    program = shader.program;
-    var aPosition = gl.getAttribLocation(program, "aPosition");
-    var aTangent = gl.getAttribLocation(program, "aTangent");
-    var aNormal = gl.getAttribLocation(program, "aNormal");
-    var aUV = gl.getAttribLocation(program, "aUV");
-    var uScreenSize = gl.getUniformLocation(program, "uScreenSize");
-
-    if(aPosition >= 0){
-        gl.bindBuffer(gl.ARRAY_BUFFER, rawPosBuffer);
-        gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 3 * buffferTypedata.BYTES_PER_ELEMENT, 0 * buffferTypedata.BYTES_PER_ELEMENT);
-        gl.enableVertexAttribArray(aPosition);
-    }
-
-    if(aTangent >= 0){
-        gl.bindBuffer(gl.ARRAY_BUFFER, rawTangBuffer);
-        gl.vertexAttribPointer(aTangent, 4, gl.FLOAT, false, 4 * buffferTypedata.BYTES_PER_ELEMENT, 0 * buffferTypedata.BYTES_PER_ELEMENT);
-        gl.enableVertexAttribArray(aTangent);
-    }
-   
-    if(aNormal >= 0){
-        gl.bindBuffer(gl.ARRAY_BUFFER, rawNormalBuffer);
-        gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 2 * buffferTypedata.BYTES_PER_ELEMENT, 0 * buffferTypedata.BYTES_PER_ELEMENT);
-        gl.enableVertexAttribArray(aNormal);
-    }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, rawUVBuffer);
-    gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false,2 * buffferTypedata.BYTES_PER_ELEMENT, 0 * buffferTypedata.BYTES_PER_ELEMENT);
-    gl.enableVertexAttribArray(aUV);
-
-    gl.uniform4fv(uScreenSize,[glcanvas.width,glcanvas.height,1,1]);
-}
-    
-
-
-var actions = {
-        getContext:function() { return gl },
-        getLocation: function(_location) { return gl.getUniformLocation(program, _location); },  
-        uniformMap(_location, type, value) {
-            var map = {
-               int: (loc, val) =>  gl.uniform1i(loc, val),
-               float: (loc, val) => gl.uniform1f(loc, val),
-               vec2: (loc, val) => gl.uniform2fv(loc, val),
-               vec3: (loc, val) => gl.uniform3fv(loc, val),
-               vec4: (loc, val) => gl.uniform4fv(loc, val),
-               mat2: (loc, val) => gl.uniformMatrix2fv(loc, false, val),
-               mat3: (loc, val) => gl.uniformMatrix3fv(loc, false, val),
-               mat4: (loc, val) => gl.uniformMatrix4fv(loc,false,  val)
-            };
-            _location = actions.getLocation(_location);
-            map[type](_location, value);
-        },
-        draw(beforeDraw){
-            beforeDraw  && beforeDraw(gl);
-            gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT,0);
-        },
-        readPixels(){
-            gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT,0);
-            var pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
-            gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-            
-            return {
-                        width: gl.drawingBufferWidth,
-                        height: gl.drawingBufferHeight,
-                        buffer: pixels
-                    };      
-        },
-        update(vs,fs){
-            var code = buildShaderCode(vs,fs);
-            updateShader(code.vs,code.fs);
-        }
-    }
-
-    actions.update(vsshader,fsshader);
-    actions.draw(); 
-
-    return actions;
-
-}
-
-function TextureData(gl,pixels){
-    var __pixels = pixels || null;
-    var tex = gl.createTexture();
-    var __channel = 0;
-    return  {
-        channel:function(_pixels,_channel,repeat){
-            __pixels = _pixels;
-            __channel = _channel;
-            gl.activeTexture(gl.TEXTURE0 + __channel);
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-            if(repeat === true || repeat === 'repeat'){
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-            }else{
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            }
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _pixels.width, _pixels.height, 0, gl.RGBA,  gl.UNSIGNED_BYTE, _pixels.buffer);
-            gl.bindTexture(gl.TEXTURE_2D, null);
-        },
-        rawchannel:function(_pixels,_channel,repeat){
-            __pixels = _pixels;
-            __channel = _channel;
-            gl.activeTexture(gl.TEXTURE0 + __channel);
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            // gl.generateMipmap(gl.TEXTURE_2D);
-            if(repeat === true || repeat === 'repeat'){
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-            }else{
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            }
-            gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,_pixels);
-            gl.bindTexture(gl.TEXTURE_2D, null);
-        },
-        bind: function(){
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.activeTexture(gl.TEXTURE0 + __channel);
-        },
-        unbind: function() {
-            __pixels = null;
-            __channel = 0;
-            gl.deleteTexture(tex);
-            gl.bindTexture(gl.TEXTURE_2D, 0);
-        },
-        size:function() {
-            return [ __pixels.width, __pixels.height];
-        }
-    }
-}
-function calTangents(positions, normals, uvs, indices) {
-    var triangleCount = indices.length / 3;
-    var vertexCount   = positions.length / 3;
-    var i1, i2, i3;
-    var x1, x2, y1, y2, z1, z2, s1, s2, t1, t2, r;
-    var sdir = new Vec3();
-    var tdir = new Vec3();
-    var v1   = new Vec3();
-    var v2   = new Vec3();
-    var v3   = new Vec3();
-    var w1   = new Vec2();
-    var w2   = new Vec2();
-    var w3   = new Vec2();
-    var i; // Loop counter
-    var tan1 = new Float32Array(vertexCount * 3);
-    var tan2 = new Float32Array(vertexCount * 3);
-
-    var tangents = [];
-    var area = 0.0;
-
-    for (i = 0; i < triangleCount; i++) {
-        i1 = indices[i * 3];
-        i2 = indices[i * 3 + 1];
-        i3 = indices[i * 3 + 2];
-
-        v1.set(positions[i1 * 3], positions[i1 * 3 + 1], positions[i1 * 3 + 2]);
-        v2.set(positions[i2 * 3], positions[i2 * 3 + 1], positions[i2 * 3 + 2]);
-        v3.set(positions[i3 * 3], positions[i3 * 3 + 1], positions[i3 * 3 + 2]);
-
-        w1.set(uvs[i1 * 2], uvs[i1 * 2 + 1]);
-        w2.set(uvs[i2 * 2], uvs[i2 * 2 + 1]);
-        w3.set(uvs[i3 * 2], uvs[i3 * 2 + 1]);
-
-        x1 = v2.x - v1.x;
-        x2 = v3.x - v1.x;
-        y1 = v2.y - v1.y;
-        y2 = v3.y - v1.y;
-        z1 = v2.z - v1.z;
-        z2 = v3.z - v1.z;
-
-        s1 = w2.x - w1.x;
-        s2 = w3.x - w1.x;
-        t1 = w2.y - w1.y;
-        t2 = w3.y - w1.y;
-
-        area = s1 * t2 - s2 * t1;
-
-        // Area can 0.0 for degenerate triangles or bad uv coordinates
-        if (area == 0.0) {
-            // Fallback to default values
-            sdir.set(0.0, 1.0, 0.0);
-            tdir.set(1.0, 0.0, 0.0);
-        } else {
-            r = 1.0 / area;
-            sdir.set((t2 * x1 - t1 * x2) * r,
-                     (t2 * y1 - t1 * y2) * r,
-                     (t2 * z1 - t1 * z2) * r);
-            tdir.set((s1 * x2 - s2 * x1) * r,
-                     (s1 * y2 - s2 * y1) * r,
-                     (s1 * z2 - s2 * z1) * r);
-        }
-
-        tan1[i1 * 3 + 0] += sdir.x;
-        tan1[i1 * 3 + 1] += sdir.y;
-        tan1[i1 * 3 + 2] += sdir.z;
-        tan1[i2 * 3 + 0] += sdir.x;
-        tan1[i2 * 3 + 1] += sdir.y;
-        tan1[i2 * 3 + 2] += sdir.z;
-        tan1[i3 * 3 + 0] += sdir.x;
-        tan1[i3 * 3 + 1] += sdir.y;
-        tan1[i3 * 3 + 2] += sdir.z;
-
-        tan2[i1 * 3 + 0] += tdir.x;
-        tan2[i1 * 3 + 1] += tdir.y;
-        tan2[i1 * 3 + 2] += tdir.z;
-        tan2[i2 * 3 + 0] += tdir.x;
-        tan2[i2 * 3 + 1] += tdir.y;
-        tan2[i2 * 3 + 2] += tdir.z;
-        tan2[i3 * 3 + 0] += tdir.x;
-        tan2[i3 * 3 + 1] += tdir.y;
-        tan2[i3 * 3 + 2] += tdir.z;
-    }
-
-    t1 = new Vec3();
-    t2 = new Vec3();
-    var n = new Vec3();
-    var temp = new Vec3();
-
-    for (i = 0; i < vertexCount; i++) {
-        n.set(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]);
-        t1.set(tan1[i * 3], tan1[i * 3 + 1], tan1[i * 3 + 2]);
-        t2.set(tan2[i * 3], tan2[i * 3 + 1], tan2[i * 3 + 2]);
-
-        var ndott = n.dot(t1);
-        temp.copy(n).scale(ndott);
-        temp.sub2(t1, temp).normalize();
-
-        tangents[i * 4]     = temp.x;
-        tangents[i * 4 + 1] = temp.y;
-        tangents[i * 4 + 2] = temp.z;
-
-        temp.cross(n, t1);
-        tangents[i * 4 + 3] = (temp.dot(t2) < 0.0) ? -1.0 : 1.0;
-    }
-
-    return tangents;
-};
-function createPlane(opts) {
-    var he = opts && opts.halfExtents !== undefined ? opts.halfExtents : new Vec2(0.5, 0.5);
-    var ws = opts && opts.widthSegments !== undefined ? opts.widthSegments : 5;
-    var ls = opts && opts.lengthSegments !== undefined ? opts.lengthSegments : 5;
-    var calculateTangents = opts && opts.calculateTangents !== undefined ? opts.calculateTangents : false;
-
-    var i, j;
-    var x, y, z, u, v;
-    var positions = [];
-    var normals = [];
-    var uvs = [];
-    var indices = [];
-
-    // Generate plane as follows (assigned UVs denoted at corners):
-    // (0,1)x---------x(1,1)
-    //      |         |
-    //      |         |
-    //      |    O--X |length
-    //      |    |    |
-    //      |    Z    |
-    // (0,0)x---------x(1,0)
-    // width
-    var vcounter = 0;
-
-    for (i = 0; i <= ws; i++) {
-        for (j = 0; j <= ls; j++) {
-            x = -he.x + 2.0 * he.x * i / ws;
-            y = 0.0;
-            z = -(-he.y + 2.0 * he.y * j / ls);
-            u = i / ws;
-            v = j / ls;
-
-            positions.push(x, y, z);
-            normals.push(0.0, 1.0, 0.0);
-            uvs.push(u, v);
-
-            if ((i < ws) && (j < ls)) {
-                indices.push(vcounter + ls + 1, vcounter + 1, vcounter);
-                indices.push(vcounter + ls + 1, vcounter + ls + 2, vcounter + 1);
-            }
-
-            vcounter++;
-        }
-    }
-
-    var options = {
-        positions:positions,
-        normals: normals,
-        uvs: uvs,
-        uvs1: uvs, // UV1 = UV0 for plane
-        indices: indices
-    };
-
-    if (calculateTangents) {
-        options.tangents = calTangents(positions, normals, uvs, indices);
-    }
-
-    return options;
-};
-
-function compileShader(gl, type, src) {
-    var shader = gl.createShader(type)
-    gl.shaderSource(shader, src)
-    gl.compileShader(shader)
-    if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        var errLog = gl.getShaderInfoLog(shader)
-        console.log(errLog)
-        gl.deleteShader(shader);
-    }
-    return shader
-}
-
-
-function shaderPrograme(gl, vs, fs) {
-
-        var vertSource = vs;
-        var fragSource = fs;
-
-        var vshader = compileShader(gl, gl.VERTEX_SHADER, vertSource);
-        var fshader = compileShader(gl, gl.FRAGMENT_SHADER, fragSource);
-
-
-        var program = gl.createProgram();
-        gl.attachShader(program, vshader);
-        gl.attachShader(program, fshader);
-        gl.linkProgram(program);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-
-            var errLog = gl.getProgramInfoLog(program);
-            gl.deleteProgram(program);
-            throw new Error(errLog, 'Error linking program: ' + errLog);
-        }
-        return {
-            program: program
-        }
-}
-
 
    
 </script>

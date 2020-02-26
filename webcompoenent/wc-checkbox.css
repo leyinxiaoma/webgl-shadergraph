@@ -1,0 +1,131 @@
+wc-checkbox {
+    display: block;
+    position: relative;
+    min-height: 14px;
+    margin: 4px 0 0; }
+wc-checkbox.inline {
+    display: inline-block; }
+wc-checkbox input {
+    position: absolute !important;
+    clip: rect(1px, 1px, 1px, 1px);
+    padding: 0 !important;
+    border: 0 !important;
+    height: 1px !important;
+    width: 1px !important;
+    overflow: hidden; }
+wc-checkbox label {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    position: relative;
+    display: inline-block;
+    padding-left: 0px;
+    cursor: pointer;
+    min-height: 12px;
+    margin-bottom: 0;
+    line-height: 20px;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 14px; }
+wc-checkbox label:before {
+    position: absolute;
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 10px;
+    left: 100%;
+    top: 1px;
+    content: "";
+    border: 1px solid #8d9096;
+    border-radius: 2px;
+    background-color: #FFFFFF;
+ }
+
+
+    wc-checkbox input[type=checkbox]:indeterminate + label:before {
+        content: "-";
+        color: #2ca01c;
+        font-weight: bold;
+        font-size: 18px;
+        line-height: 14px;
+        text-align: center;
+      }
+      
+      
+      wc-checkbox input[type=checkbox]:checked + label:after {
+        transform: rotate(45deg) scale(0.7);
+        position: absolute;
+        left: calc(100% + 4px);
+        top: 1px;
+        display: table;
+        width: 5px;
+        height: 9px;
+        border: 2px solid #2ca01c;
+        border-top: 0;
+        border-left: 0;
+        content: ' ';
+        transition: all 0.1s cubic-bezier(0.71, -0.46, 0.88, 0.6);
+        color: #2ca01c;
+      }
+      
+      
+
+
+wc-checkbox input[type=checkbox]:checked:disabled + label:before {
+    color: #d4d7dc; }
+wc-checkbox input[type=checkbox]:disabled + label:before {
+    border-color: #eceef1; }
+wc-checkbox input[type=checkbox]:not(:disabled) + label:hover:before {
+    box-shadow: 0 0 0 2px #d4d7dc; }
+wc-checkbox input[type=checkbox]:not(:disabled):not(:checked) + label:hover:before {
+    color: #d4d7dc;
+    box-shadow: 0 0 0 2px #d4d7dc; }
+wc-checkbox input[type=checkbox]:not(:disabled):checked + label:focus:before, wc-checkbox input[type=checkbox]:not(:disabled):checked + label:active:before {
+    border-color: #2ca01c; }
+wc-checkbox.wc-a11y-focused label:before {
+    border-color: #2ca01c; }
+
+
+wc-checkbox-group.input-error .hi-circle-alert {
+    margin-top: 2px;
+    margin-right: 5px; }
+wc-checkbox-group.input-error .hi-circle-alert:before {
+    color: #D93B42;
+    font-size: 16px; }
+
+wc-checkbox-group.input-error legend {
+    color: #D93B42; }
+
+wc-checkbox-group .label-container {
+    height: 25px; }
+
+wc-checkbox-group fieldset {
+    border: none;
+    margin: 0;
+    padding: 0; }
+wc-checkbox-group fieldset span {
+    float: left;
+    margin-right: 5px; }
+wc-checkbox-group fieldset wc-label legend {
+    font-weight: 400;
+    font-size: 14px; }
+wc-checkbox-group fieldset wc-label legend span {
+    float: initial;
+    margin-right: initial;
+    padding-left: initial; }
+wc-checkbox-group fieldset wc-label legend span:last-child {
+    padding-left: initial; }
+wc-checkbox-group fieldset legend {
+    font-weight: 600;
+    float: left; }
+wc-checkbox-group fieldset legend span:last-child {
+    padding-left: 5px; }
+wc-checkbox-group fieldset legend.error {
+    color: #D93B42; }
+wc-checkbox-group fieldset wc-checkbox {
+    clear: both; }
+
+wc-checkbox-group.wc-inline fieldset > wc-checkbox {
+    display: inline-block;
+    padding-right: 20px;
+    vertical-align: top; }

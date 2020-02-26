@@ -15,6 +15,12 @@ class  GraphNode extends BaseNode {
     init(){
         super.init();
 
+        this.prevConnectNodes = [];
+        this.nextConnectNodes = [];
+        this._slotins = [];
+        this._slotouts = [];
+
+        
         this._editor = editor;
         if (!editor) {
             throw new Error("Couldn't find current editor");
